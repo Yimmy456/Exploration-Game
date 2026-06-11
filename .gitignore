@@ -12,6 +12,14 @@
 /[Uu]ser[Ss]ettings/
 *.log
 
+/Exploration Game/Library/
+/Exploration Game/Temp/
+/Exploration Game/Obj/
+/Exploration Game/Build/
+/Exploration Game/Builds/
+/Exploration Game/Logs/
+/Exploration Game/UserSettings/
+
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
