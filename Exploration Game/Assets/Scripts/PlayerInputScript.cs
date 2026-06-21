@@ -3,73 +3,52 @@ using UnityEngine.InputSystem;
 
 public class PlayerInputScript : MonoBehaviour
 {
-    [SerializeField]
-    float _speed = 5.0f;
+    [SerializeField] float _movementSpeed = 5.0f;
+    [SerializeField] float _rotationSpeed = 0.1f;
+    [SerializeField] float _lookUp;
+    [SerializeField] float _lookDown;
+    [SerializeField] Camera _camera;
 
-    [SerializeField]
-    Rigidbody _rb;
+    [SerializeField] PlayerInputHandlerScript _handler;
+    [SerializeField] CharacterController _controller;
 
-    [SerializeField]
-    Camera _camera;
+    private Vector3 CurrentMovement = Vector3.zero;
+    public float VerticalRotation { get; private set; }
+    public float MovementSpeed { get { return _movementSpeed; } }
+    public float RotationSpeed { get { return _rotationSpeed; } }    
+    public Camera Camera { get { return _camera; } }
 
-    InputSystem_Actions _inputSystem;
+    float _verticalRot;
 
-    Vector3 _direction = Vector3.zero;
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private void Update()
     {
-        Initialize();
+        HandleMovement();
+        ApplyRotation();
     }
 
-    private void OnEnable()
+    void HandleMovement()
     {
-        SubscribeEvents();
+        if(_handler == null || _controller == null) { return; }
+
+        Vector3 _inputDirection = new Vector3(_handler.MovementInput.x, 0.0f, _handler.MovementInput.y);
+
+        Vector3 _worldDirection = transform.TransformDirection(_inputDirection);
+
+        CurrentMovement.x = _worldDirection.x * _movementSpeed;
+
+        CurrentMovement.z = _worldDirection.z * _movementSpeed;
+
+        _controller.Move(CurrentMovement * Time.deltaTime);
     }
 
-    private void OnDisable()
+    void ApplyRotation()
     {
-        UnsubscribeEvents();
-    }
+        Vector3 _inputV3 = new Vector3(_handler.RotationInput.x, _handler.RotationInput.y, 0f);
 
-    private void OnDestroy()
-    {
-        UnsubscribeEvents(true);
-    }
+        transform.Rotate(0f, _inputV3.x, 0f);
 
-    void Initialize()
-    {
-        SubscribeEvents();
-    }
+        _verticalRot = Mathf.Clamp(_verticalRot - _inputV3.y, _lookUp, _lookDown);
 
-    void SubscribeEvents()
-    {
-        if (_inputSystem == null)
-        {
-            _inputSystem = new InputSystem_Actions();
-        }
-
-        _inputSystem.Enable();
-
-        _inputSystem.Player.Move.performed += ctx => MoveFunction();
-    }
-
-    void UnsubscribeEvents(bool _dispose = false)
-    {
-        _inputSystem.Player.Move.performed -= ctx => MoveFunction();
-
-        if (_dispose)
-        {
-            _inputSystem.Dispose();
-        }
-        else
-        {
-            _inputSystem.Disable();
-        }
-    }
-
-    void MoveFunction()
-    {
-
+        _camera.transform.localRotation = Quaternion.Euler(_verticalRot, 0f, 0f);
     }
 }
