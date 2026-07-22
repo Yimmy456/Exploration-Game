@@ -14,14 +14,17 @@ public class PlayerInputHandlerScript : MonoBehaviour
     public const string Movement = "Move";
     public const string Rotation = "Look";
     public const string Jump = "Jump";
+    public const string Collect = "Collect";
 
     public InputAction MovementAction { get; private set; }
     public InputAction RotationAction { get; private set; }
     public InputAction JumpAction { get; private set; }
+    public InputAction CollectAction { get; private set; }
 
     public Vector2 MovementInput { get; private set; }
     public Vector2 RotationInput { get; private set; }
     public bool JumpInput { get; private set; }
+    public bool CollectInput { get; private set; }
 
 
     private void Awake()
@@ -51,6 +54,7 @@ public class PlayerInputHandlerScript : MonoBehaviour
         MovementAction = _map.FindAction(Movement);
         RotationAction = _map.FindAction(Rotation);
         JumpAction = _map.FindAction(Jump);
+        CollectAction = _map.FindAction(Collect);
 
         SubscribeInputs();
     }
@@ -67,6 +71,9 @@ public class PlayerInputHandlerScript : MonoBehaviour
 
         JumpAction.performed += ctx => JumpInput = true;
         JumpAction.canceled += ctx => JumpInput = false;
+
+        CollectAction.performed += ctx => CollectInput = true;
+        CollectAction.canceled += ctx => CollectInput = false;
     }
 
     void UnsubscribeInputs(bool _dispose = false)
@@ -79,6 +86,9 @@ public class PlayerInputHandlerScript : MonoBehaviour
 
         JumpAction.performed -= ctx => JumpInput = true;
         JumpAction.canceled -= ctx => JumpInput = false;
+
+        CollectAction.performed -= ctx => CollectInput = true;
+        CollectAction.canceled -= ctx => CollectInput = false;
 
         _inputAssets.FindActionMap(ActionMapName).Disable();
     }
