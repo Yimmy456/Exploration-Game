@@ -30,10 +30,4 @@ public class JSonParsingScript : MonoBehaviour
             Debug.LogError("No file found!");
         }
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

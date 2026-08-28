@@ -11,6 +11,19 @@
                 "y": 3.0,
                 "z": 14.720000267028809
             }
+        },
+
+        {
+            "RelicID": "Relic_2",
+            "RelicName": "Relic 2",
+            "RelicDescription": "",
+            "IsCollected": false,
+            "RelicThumbnailAddress": "",
+            "Position": {
+                "x": 21.819999694824219,
+                "y": 3.0,
+                "z": 24.720000267028809
+            }
         }
     ]
 }
