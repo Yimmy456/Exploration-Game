@@ -15,21 +15,26 @@ public class PlayerInputScript : MonoBehaviour
     private Vector3 CurrentMovement = Vector3.zero;
     public float VerticalRotation { get; private set; }
     public float MovementSpeed { get { return _movementSpeed; } }
-    public float RotationSpeed { get { return _rotationSpeed; } }    
+    public float RotationSpeed { get { return _rotationSpeed; } }
     public Camera Camera { get { return _camera; } }
 
     float _verticalRot;
 
     private void Update()
     {
+        // While in UI mode, InputModeManager disables _handler, which stops
+        // it from receiving/tracking input. Skip processing entirely here
+        // too, rather than relying solely on the handler's values already
+        // being zeroed — this way movement/rotation simply doesn't run
+        // while the player shouldn't have control, regardless of timing.
+        if (_handler == null || !_handler.enabled || _controller == null) { return; }
+
         HandleMovement();
         ApplyRotation();
     }
 
     void HandleMovement()
     {
-        if(_handler == null || _controller == null) { return; }
-
         Vector3 _inputDirection = new Vector3(_handler.MovementInput.x, 0.0f, _handler.MovementInput.y);
 
         Vector3 _worldDirection = transform.TransformDirection(_inputDirection);
@@ -50,5 +55,11 @@ public class PlayerInputScript : MonoBehaviour
         _verticalRot = Mathf.Clamp(_verticalRot - _inputV3.y, _lookUp, _lookDown);
 
         _camera.transform.localRotation = Quaternion.Euler(_verticalRot, 0f, 0f);
+    }
+
+    void ApplyOtherInputs()
+    {
+        if (_handler == null || _controller == null) { return; }
+
     }
 }

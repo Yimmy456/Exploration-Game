@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Analytics;
-using UnityEngine.InputSystem.iOS;
 using UnityEngine.UI;
+using TMPro;
 
 public class RecyclableScrollView : MonoBehaviour
 {
@@ -18,6 +16,7 @@ public class RecyclableScrollView : MonoBehaviour
     [SerializeField] private Vector2 _cellSize;
     [SerializeField] private Vector2 _spacing;
     [SerializeField] private RectOffset _padding;
+    [SerializeField] private TextMeshProUGUI _itemsCollectedCountText;
 
     List<ItemData> _allData = new List<ItemData>();
     List<ScrollItemObject> _currentItemObjects = new List<ScrollItemObject>();
@@ -38,17 +37,48 @@ public class RecyclableScrollView : MonoBehaviour
         get { return _allData; }
     }
 
+    private bool _hasStarted;
+
     void Start()
     {
-        // Fake data initialization for testing
+        _scrollRect.onValueChanged.AddListener(OnScroll);
+        Refresh();
+    }
+
+    void OnEnable()
+    {
+        // Re-pull relic data every time this panel is shown (e.g. via
+        // UIPanel.OnEnable), so items collected since the last time it was
+        // open actually show up. Skip the very first OnEnable since Start()
+        // (which registers the scroll listener) hasn't run yet at that point
+        // and will call Refresh() itself.
+        if (_hasStarted)
+        {
+            Refresh();
+        }
+    }
+
+    /// <summary>
+    /// Reloads relic data from disk and re-lays-out the visible items.
+    /// Safe to call repeatedly (e.g. every time the inventory canvas is
+    /// shown) — clears previously loaded data first so entries don't
+    /// duplicate on repeated opens.
+    /// </summary>
+    public void Refresh()
+    {
+        _hasStarted = true;
+
+        _allData.Clear();
+        _lastStartIndex = -1; // force LayoutVisibleItems to redraw even if scroll position is unchanged
 
         GetRelicsList();
-
         UpdateContentHeight();
-
         LayoutVisibleItems(0);
 
-        _scrollRect.onValueChanged.AddListener(OnScroll);
+        if (_scrollRect != null)
+        {
+            _scrollRect.verticalNormalizedPosition = 1f; // reset scroll to top on refresh
+        }
     }
 
     void UpdateContentHeight()
@@ -66,7 +96,7 @@ public class RecyclableScrollView : MonoBehaviour
     private int GetFirstVisibleRowIndex()
     {
         float _contentY = _content.anchoredPosition.y - _padding.top;
-        if(_contentY < 0) { _contentY = 0; }
+        if (_contentY < 0) { _contentY = 0; }
         int _row = Mathf.FloorToInt(_contentY / (_cellSize.y + _spacing.y));
         return Mathf.Clamp(_row, 0, Mathf.CeilToInt((float)_allDataCount / _itemsPerRow) - 1);
     }
@@ -77,12 +107,12 @@ public class RecyclableScrollView : MonoBehaviour
         _visibleRowCount = Mathf.CeilToInt(viewPortHeight / (_cellSize.y + _spacing.y)) / 2;
 
         int startIndex = startRow * _itemsPerRow;
-        if(startIndex == _lastStartIndex)
+        if (startIndex == _lastStartIndex)
         {
             return;
         }
 
-        foreach(var _obj in _currentItemObjects)
+        foreach (var _obj in _currentItemObjects)
         {
             _obj.gameObject.SetActive(false);
             _inactiveItemObjects.Enqueue(_obj);
@@ -90,13 +120,18 @@ public class RecyclableScrollView : MonoBehaviour
 
         _currentItemObjects.Clear();
 
+        if (_allDataCount == 0)
+        {
+            return;
+        }
+
         int endIndex = Mathf.Min(startIndex + (_visibleRowCount * _itemsPerRow), _allDataCount);
 
-        for(int _i = startIndex; _i < endIndex; _i++)
+        for (int _i = startIndex; _i < endIndex; _i++)
         {
             ScrollItemObject _itemObject = GetPooledItem();
 
-            if(_itemObject == null)
+            if (_itemObject == null)
             {
                 continue;
             }
@@ -115,14 +150,14 @@ public class RecyclableScrollView : MonoBehaviour
 
             _rt.anchoredPosition = new Vector2(_pos.x, _pos.y);
 
-            _itemObject.SetData(_allData[_i]);            
+            _itemObject.SetData(_allData[_i]);
             _currentItemObjects.Add(_itemObject);
         }
     }
 
     ScrollItemObject GetPooledItem()
     {
-        if(_inactiveItemObjects.Count > 0)
+        if (_inactiveItemObjects.Count > 0)
         {
             return _inactiveItemObjects.Dequeue();
         }
@@ -133,108 +168,11 @@ public class RecyclableScrollView : MonoBehaviour
         return newObj.GetComponent<ScrollItemObject>();
     }
 
-    /*
-    void SetupContainer()
-    {
-        // Adjust the Content height to fit the full structural length of the dataset
-        //float totalHeight = (_allData.Count * _itemHeight) + ((_allData.Count - 1) * _spacing.y);
-        int _totalRows = Mathf.CeilToInt((float)_totalItemCount / _itemsPerRow);
-        float totalHeight = _totalRows * (_itemHeight + _spacing.y) - _spacing.y;
-        _content.sizeDelta = new Vector2(_content.sizeDelta.x, totalHeight);
-    }
-
-    void SpawnPool()
-    {
-        // Calculate exactly how many items fit into the viewport
-        float viewPortHeight = _scrollRect.viewport.rect.height;
-        _totalVisibleItems = Mathf.CeilToInt(viewPortHeight / (_itemHeight + _spacing.y)) + _bufferCount;
-
-        for (int i = 0; i < _totalVisibleItems; i++)
-        {
-            GameObject obj = Instantiate(_itemPrefab, _content);
-            RectTransform rect = obj.GetComponent<RectTransform>();
-
-            // Fix anchors to Top-Left for precise manual positioning
-            //rect.anchorMin = new Vector2(0, 1);
-            //rect.anchorMax = new Vector2(1, 1);
-            //rect.pivot = new Vector2(0.5f, 1);
-
-            rect.anchorMin = new Vector2(0f, 1);
-            rect.anchorMax = new Vector2(0f, 1);
-            rect.pivot = new Vector2(0.5f, 1);
-
-            _pooledItems.Add(rect);
-        }
-    }
-
-    void OnScroll(Vector2 normalizedPos)
-    {
-        // Determine which data index should currently be at the top of the viewport
-        float contentY = _content.anchoredPosition.y;
-        int topIndex = Mathf.FloorToInt(contentY / (_itemHeight + _spacing.y));
-        topIndex = Mathf.Clamp(topIndex, 0, Mathf.Max(0, _allData.Count - _totalVisibleItems));
-
-        if (topIndex != _previousTopIndex)
-        {
-            _previousTopIndex = topIndex;
-            UpdateItems(topIndex);
-        }
-    }
-
-    void UpdateItems(int topIndex)
-    {
-        float ySpacing = -(_itemHeight + _spacing.y);
-        float xSpacing = _itemWidth + _spacing.x;
-
-        float yPos = -_padding.y;
-        float xPos = _padding.x;
-
-        for (int i = 0; i < _totalVisibleItems; i++)
-        {
-            int dataIndex = topIndex + i;
-            int poolIndex = dataIndex % _totalVisibleItems; // Cycle through pool list smoothly
-
-            RectTransform itemRect = _pooledItems[poolIndex];
-
-            if (dataIndex < _allData.Count)
-            {
-                itemRect.gameObject.SetActive(true);
-
-                // Calculate exact local Y coordinate position for this row
-                //float yPos = -((dataIndex * _itemHeight) + (dataIndex * _spacing));
-                //float yPos = -((dataIndex * _itemHeight) + (dataIndex * _spacing));
-
-                //itemRect.anchoredPosition = new Vector2(itemRect.anchoredPosition.x, yPos);
-                itemRect.anchoredPosition = new Vector2(xPos, yPos);
-
-                if ((i % _itemsPerRow) == (_itemsPerRow - 1))
-                {
-                    yPos = yPos + ySpacing;
-                    xPos = _padding.x;
-                }
-                else
-                {
-                    xPos = xPos + xSpacing;
-                }
-
-                // Update UI display contents
-                ScrollItemObject itemScript = itemRect.GetComponent<ScrollItemObject>();
-                itemScript.SetData(_allData[dataIndex]);
-            }
-            else
-            {
-                itemRect.gameObject.SetActive(false);
-            }
-        }
-    }
-    */
     void GetRelicsList()
     {
         string filePath = Path.Combine(Application.streamingAssetsPath, "RelicsDB.json");
 
         _allDataCount = 0;
-
-        //_totalItemCount = 0;
 
         if (File.Exists(filePath))
         {
@@ -246,12 +184,19 @@ public class RecyclableScrollView : MonoBehaviour
 
             foreach (Relic _r in array.data)
             {
+                if (!_r.IsCollected)
+                {
+                    continue;
+                }
+
                 _allData.Add(new ItemData { title = $"{_r.RelicName}", index = _i });
 
                 _i++;
             }
 
             _allDataCount = _allData.Count;
+
+            _itemsCollectedCountText.text = _allDataCount.ToString() + " / " + array.data.Length.ToString();
         }
     }
 }

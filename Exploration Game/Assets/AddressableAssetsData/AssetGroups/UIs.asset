@@ -21,6 +21,24 @@ MonoBehaviour:
     m_SerializedLabels:
     - UI
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7a317d681b6729949b4f6fbc7bd1c15c
+    m_Address: Assets/Prefabs/UIs/Items Collection Scroll View UI.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7ec1385e4eeb7c947b339964986d5bf4
+    m_Address: Assets/Prefabs/UIs/Yes or No Canvas.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fb0b7d683915fd64e916729f157547f5
+    m_Address: Assets/Prefabs/UIs/Pause Menu Canvas.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 4069ce4ca7d6b4946ace24f61532b4d3, type: 2}
   m_SchemaSet:
