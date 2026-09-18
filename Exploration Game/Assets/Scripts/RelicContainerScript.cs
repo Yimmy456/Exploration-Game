@@ -1,7 +1,5 @@
-using System;
 using System.IO;
 using UnityEngine;
-using static UnityEngine.GraphicsBuffer;
 
 public class RelicContainerScript : MonoBehaviour
 {

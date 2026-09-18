@@ -185,8 +185,9 @@ GameObject:
   - component: {fileID: 1913921712830654307}
   - component: {fileID: 8446048358661758915}
   - component: {fileID: 5461376578128446890}
+  - component: {fileID: 6080016579753509930}
   m_Layer: 5
-  m_Name: Press To Take Canvas
+  m_Name: Press To Collect Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -275,3 +276,17 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &6080016579753509930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4527109784093555798}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d66a420e1ca9b9b4e8114b8da4030fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractionPromptScript
+  _promptRoot: {fileID: 3291484069329670435}
+  _messageText: {fileID: 794165192838235852}

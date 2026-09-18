@@ -1,21 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// Lives on the "Triggerer" child object — the one that actually owns the
-/// trigger Collider. Forwards proximity/collect events up to the relic's
-/// RelicContainerScript, since OnTriggerEnter/Exit only fire on the exact
-/// GameObject the Collider is attached to, not its parent.
-///
-/// Has no Update() of its own — TickVisibility() is called once per frame
-/// by RelicVisibilityManagerScript, but only while this relic is
-/// registered (i.e. the player is currently inside its trigger). Relics
-/// the player hasn't approached cost nothing per frame.
-///
-/// A relic is only actually collectable when the player is BOTH within
-/// range AND has it in sight (within the camera's view and not blocked by
-/// anything) — re-checked every tick since the player can turn away from a
-/// relic without ever leaving the trigger volume.
-/// </summary>
 public class RelicTriggererScript : MonoBehaviour
 {
     [SerializeField] private RelicContainerScript _relic;
@@ -32,30 +16,27 @@ public class RelicTriggererScript : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Look for the handler on whatever entered, rather than matching by
-        // name — works regardless of what the player object is called, and
-        // regardless of where in its hierarchy the trigger collider is.
-        var handler = other.GetComponentInParent<PlayerInputHandlerScript>();
-        if (handler == null) return;
+        var playerInput = other.GetComponent<PlayerInputScript>();
+        if (playerInput == null) return;
 
-        _playerInputHandler = handler;
-        _playerCamera = other.GetComponentInParent<PlayerInputScript>()?.Camera;
+        // PlayerInputScript already holds a correctly Inspector-wired
+        // reference to Handler regardless of where Handler sits in the
+        // hierarchy — reuse it instead of doing a second, hierarchy-
+        // dependent GetComponent search that could silently fail again.
+        _playerInputHandler = playerInput.Handler;
+        _playerCamera = playerInput.Camera;
+
         RelicVisibilityManagerScript.Instance.Register(this);
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.GetComponentInParent<PlayerInputHandlerScript>() == null) return;
+        if (other.GetComponent<PlayerInputScript>() == null) return;
 
         RelicVisibilityManagerScript.Instance.Unregister(this);
         HidePromptIfShown();
     }
 
-    /// <summary>
-    /// Called once per frame by RelicVisibilityManagerScript while this
-    /// relic is registered. Checks sight, shows/hides the prompt as that
-    /// changes, and collects if the Collect input fires while visible.
-    /// </summary>
     public void TickVisibility()
     {
         if (_collected || _playerInputHandler == null) return;
@@ -77,10 +58,6 @@ public class RelicTriggererScript : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// True if the relic is within the camera's viewport AND nothing on
-    /// _obstructionMask sits between the camera and the relic.
-    /// </summary>
     private bool IsRelicVisible()
     {
         if (_playerCamera == null || _relic == null) return false;
@@ -98,12 +75,8 @@ public class RelicTriggererScript : MonoBehaviour
         Vector3 toRelic = relicTransform.position - origin;
         float distance = toRelic.magnitude;
 
-        // Ignore trigger colliders (like this very Triggerer's own
-        // BoxCollider) so they can't falsely block their own line of sight.
         if (Physics.Raycast(origin, toRelic.normalized, out RaycastHit hit, distance, _obstructionMask, QueryTriggerInteraction.Ignore))
         {
-            // Hit something before reaching the relic that isn't the relic
-            // itself (e.g. it has its own solid collider) — actually blocked.
             if (hit.transform != relicTransform && !hit.transform.IsChildOf(relicTransform))
                 return false;
         }
@@ -117,6 +90,21 @@ public class RelicTriggererScript : MonoBehaviour
         RelicVisibilityManagerScript.Instance.Unregister(this);
         HidePromptIfShown();
         _relic.SetIsCollected();
+
+        // _relic.SetIsCollected() calls Destroy(gameObject) on the relic's
+        // container, but Unity defers actual destruction to the end of
+        // the frame — so it's safe to keep using _relic/this object below,
+        // and to call the popup service right here.
+        //
+        // itemSprite/logoSprite are passed null for now — RelicDatabaseClass's
+        // Relic has RelicThumbnailAddress (an Addressable string key), but
+        // nothing yet loads that into an actual Sprite, and there's no
+        // franchise-logo field in the data model at all yet. Configure()
+        // already handles null gracefully (the Image just disables itself),
+        // so this isn't blocking — just flagging what's still open.
+        Relic relicData = RelicDatabaseClass.GetById(_relic.RelicID);
+        string itemName = relicData != null ? relicData.RelicName : _relic.RelicID;
+        RelicCollectedPopupServiceScript.Instance.Show(itemName, null, null);
     }
 
     private void HidePromptIfShown()

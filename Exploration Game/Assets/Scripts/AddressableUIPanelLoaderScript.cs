@@ -4,18 +4,25 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
 /// <summary>
-/// Loads a UI canvas prefab via Addressables and shows/hides it. Assumes the
-/// prefab has a UIPanel (or subclass) component on its root, so opening it
-/// automatically requests UI mode and closing it releases that claim —
-/// no changes needed to InputModeManagerScript or UIPanel for this to work.
+/// Loads a UI canvas prefab via Addressables and shows/hides it. Generic —
+/// one instance of this component per Addressable prefab you want to
+/// manage this way (Pause Menu, Confirmation Dialog, Relic Collected
+/// Popup, and now the relic "Press X to collect" prompt).
 ///
-/// Two lifetime strategies are provided:
-/// - KeepLoaded (default): load once, then just SetActive(true/false) after
-///   that. Good for panels you open/close often (inventory, pause menu).
-/// - ReleaseOnHide: fully release the instance (and its loaded asset) each
-///   time it's hidden. Good for rarely-shown, heavier panels (e.g. a
-///   "reward collected" popup with big textures) where you'd rather free
-///   the memory than keep it resident.
+/// Two lifetime strategies:
+/// - KeepLoaded (default): load once, then just SetActive(true/false)
+///   after that. Good for panels opened/closed often, or ones — like the
+///   relic prompt canvas — that should just stay loaded and resident for
+///   the whole session once instantiated.
+/// - ReleaseOnHide: fully destroy the instance (and free the Addressables
+///   asset) each time it's hidden. Good for rarely-shown, heavier panels.
+///
+/// For the relic prompt canvas specifically: its root carries
+/// InteractionPromptScript, which already does its own reference-counted
+/// Show()/Hide() on a *child* object (_promptRoot). This loader's job is
+/// only to get that root instantiated once — call ShowAsync() a single
+/// time at startup and never call Hide() on this loader. Visibility of the
+/// actual prompt text is entirely InteractionPromptScript's job from then on.
 /// </summary>
 public class AddressableUIPanelLoaderScript : MonoBehaviour
 {
@@ -23,20 +30,27 @@ public class AddressableUIPanelLoaderScript : MonoBehaviour
 
     [SerializeField] private AssetReferenceGameObject panelPrefab;
     [SerializeField] private LifetimeStrategy strategy = LifetimeStrategy.KeepLoaded;
-    [SerializeField] private Transform parent; // optional, e.g. a Canvas root
+    [SerializeField] private Transform parent; // optional, e.g. a persistent Canvas root
+
+    [Tooltip("If true, this loader calls Show() itself on Start() — for panels that should just be resident from scene start (e.g. the relic prompt canvas), so nothing else needs to trigger the initial load. Leave false for on-demand panels like the Pause Menu, which open only when something calls Show()/ShowAsync().")]
+    [SerializeField] private bool loadOnStart = false;
 
     private GameObject instance;
     private AsyncOperationHandle<GameObject> handle;
     private bool isLoading;
 
-    /// <summary>True while the panel is loaded and currently active/visible.</summary>
+    private void Start()
+    {
+        if (loadOnStart) Show();
+    }
+
+    /// <summary>True while the panel is loaded and currently active.</summary>
     public bool IsOpen => instance != null && instance.activeSelf;
 
     /// <summary>
     /// Loads the panel if needed, shows it, and returns the instance once
-    /// ready. Use this when you need to reach into the panel afterward
-    /// (e.g. to set text/callbacks on a reusable dialog) — otherwise just
-    /// call the fire-and-forget Show() below.
+    /// ready. Use this when you need to reach into the panel afterward —
+    /// otherwise the fire-and-forget Show() below is enough.
     /// </summary>
     public async Task<GameObject> ShowAsync()
     {
@@ -48,8 +62,8 @@ public class AddressableUIPanelLoaderScript : MonoBehaviour
 
         if (isLoading)
         {
-            // Another Show() call is already loading this panel — wait for
-            // it instead of starting a second concurrent load.
+            // Another ShowAsync() call is already loading this panel —
+            // wait for it instead of starting a second concurrent load.
             while (isLoading) await Task.Yield();
             if (instance != null) instance.SetActive(true);
             return instance;
@@ -64,31 +78,34 @@ public class AddressableUIPanelLoaderScript : MonoBehaviour
         instance = await AwaitHandle(handle);
         isLoading = false;
 
-        // instance is active-by-default on instantiate, so UIPanel.OnEnable
-        // has already fired and requested UI mode by this point.
+        // instance is active-by-default on instantiate, so any UIPanel or
+        // singleton-registering Awake() on its root has already run.
         return instance;
     }
 
-    /// <summary>Fire-and-forget version of ShowAsync(), for UnityEvent/button wiring.</summary>
+    /// <summary>Fire-and-forget version of ShowAsync(), for UnityEvent/button wiring
+    /// or a simple boot call. For the relic prompt canvas, call this once
+    /// at startup and never call Hide() below.</summary>
     public async void Show()
     {
         await ShowAsync();
     }
 
-    /// <summary>Hides the panel per the configured lifetime strategy.</summary>
+    /// <summary>Hides the panel per the configured lifetime strategy.
+    /// Do NOT call this for the relic prompt canvas loader instance —
+    /// InteractionPromptScript.Hide() already handles its own visibility.</summary>
     public void Hide()
     {
         if (instance == null) return;
 
         if (strategy == LifetimeStrategy.KeepLoaded)
         {
-            instance.SetActive(false); // fires UIPanel.OnDisable -> ReleaseUIMode
+            instance.SetActive(false);
         }
         else
         {
-            // ReleaseInstance destroys the GameObject (firing OnDisable first,
-            // so ReleaseUIMode still runs) AND decrements the Addressables
-            // ref count, freeing the underlying asset.
+            // Destroys the GameObject and decrements the Addressables ref
+            // count, freeing the underlying asset.
             Addressables.ReleaseInstance(handle);
             instance = null;
         }

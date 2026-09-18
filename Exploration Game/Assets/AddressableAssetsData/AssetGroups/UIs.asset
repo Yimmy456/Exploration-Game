@@ -15,6 +15,12 @@ MonoBehaviour:
   m_GroupName: UIs
   m_GUID: 3e947adad6c3a9c4889e8ee6eb6cc414
   m_SerializeEntries:
+  - m_GUID: 0847668da81185a46b9b4a5c7b814984
+    m_Address: Assets/Prefabs/UIs/Item Found Reward Canvas.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4db82ac1d7d699a4abbe7ff3add888b5
     m_Address: Assets/Prefabs/UIs/Press To Take Canvas
     m_ReadOnly: 0
