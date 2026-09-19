@@ -10,7 +10,7 @@ using UnityEngine;
 /// should only hold static relic definitions (ID, name) going forward;
 /// this is the actual source of truth for what the player has collected.
 /// </summary>
-public static class RelicSaveDataScript
+public static class RelicSaveDataClass
 {
     private const string SaveFileName = "RelicSaveData.json";
 

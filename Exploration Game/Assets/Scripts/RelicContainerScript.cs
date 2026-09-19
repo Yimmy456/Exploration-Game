@@ -13,48 +13,28 @@ public class RelicContainerScript : MonoBehaviour
     public GameObject Relic {  get { return _relic; } }
 
     public string RelicID {  get { return _id; } }
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        filePath = Path.Combine(Application.streamingAssetsPath, "RelicsDB.json");
+        // Already collected in a previous session — don't let this relic
+        // show up in the world again. Checked in Awake() (before any
+        // Start(), including RelicTriggererScript's / the visibility
+        // manager's) so it's removed before anything else on it gets a
+        // chance to run.
+        if (RelicSaveDataClass.IsCollected(_id))
+        {
+            Destroy(gameObject);
+        }
     }
 
-    void SetIsCollectedJSON()
-    {
-        if (!File.Exists(filePath))
-        {
-            Debug.LogError("File not found!");
-
-            return;
-        }
-
-        // 1. Read local JSON file
-        string jsonText = File.ReadAllText(filePath);
-
-        // 2. Parse JSON to C# object
-        RelicArray array = JsonUtility.FromJson<RelicArray>(jsonText);
-
-        foreach (var relic in array.data)
-        {
-            if (relic.RelicID == _id)
-            {
-                relic.IsCollected = true;
-
-                Debug.Log("Relic found!");
-
-                break;
-            }
-        }
-
-        string updatedJson = JsonUtility.ToJson(array, true);
-
-        File.WriteAllText(filePath, updatedJson);
-    }
-
+    // Called by RelicTriggererScript.Collect() when the player picks this
+    // relic up. Marks it collected in the actual save-data authority
+    // (persistentDataPath/RelicSaveData.json via RelicSaveDataScript)
+    // instead of rewriting RelicsDB.json — RelicsDB.json stays static,
+    // read-only relic metadata; RelicSaveDataScript is the only thing that
+    // ever records player progress.
     public void SetIsCollected()
     {
-        SetIsCollectedJSON();
+        RelicSaveDataClass.MarkCollected(_id);
 
         Destroy(gameObject);
     }

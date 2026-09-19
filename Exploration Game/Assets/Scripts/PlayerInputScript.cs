@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerInputScript : MonoBehaviour
 {
@@ -48,10 +47,5 @@ public class PlayerInputScript : MonoBehaviour
         transform.Rotate(0f, _inputV3.x, 0f);
         _verticalRot = Mathf.Clamp(_verticalRot - _inputV3.y, _lookUp, _lookDown);
         _camera.transform.localRotation = Quaternion.Euler(_verticalRot, 0f, 0f);
-    }
-
-    void ApplyOtherInputs()
-    {
-        if (_handler == null || _controller == null) { return; }
     }
 }

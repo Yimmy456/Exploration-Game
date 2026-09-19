@@ -16,6 +16,13 @@ public class PlayerInputHandlerScript : MonoBehaviour
 
     public const string Pause = "Pause";
 
+    // UI action map actions — referenced by name here (rather than as
+    // literals wherever they're looked up) so every other script that
+    // needs to find them, such as RelicPopupActionsScript, has a single
+    // shared source for the strings instead of duplicating them.
+    public const string Submit = "Submit";
+    public const string Cancel = "Cancel";
+
     public InputAction MovementAction { get; private set; }
     public InputAction RotationAction { get; private set; }
     public InputAction JumpAction { get; private set; }

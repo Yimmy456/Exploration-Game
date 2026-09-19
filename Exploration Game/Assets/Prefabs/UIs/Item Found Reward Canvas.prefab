@@ -779,6 +779,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a202c084c20d78145994513e9c5ed90f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RelicPopupActionsScript
+  _inputAssets: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!1 &4205800839454242376
 GameObject:
   m_ObjectHideFlags: 0

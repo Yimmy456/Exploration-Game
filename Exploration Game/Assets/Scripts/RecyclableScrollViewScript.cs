@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-public class RecyclableScrollView : MonoBehaviour
+public class RecyclableScrollViewScript : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] ScrollRect _scrollRect;
@@ -19,8 +19,8 @@ public class RecyclableScrollView : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _itemsCollectedCountText;
 
     List<ItemData> _allData = new List<ItemData>();
-    List<ScrollItemObject> _currentItemObjects = new List<ScrollItemObject>();
-    Queue<ScrollItemObject> _inactiveItemObjects = new Queue<ScrollItemObject>();
+    List<ScrollItemObjectScript> _currentItemObjects = new List<ScrollItemObjectScript>();
+    Queue<ScrollItemObjectScript> _inactiveItemObjects = new Queue<ScrollItemObjectScript>();
 
     private int _visibleRowCount;
     private int _lastStartIndex = -1;
@@ -129,7 +129,7 @@ public class RecyclableScrollView : MonoBehaviour
 
         for (int _i = startIndex; _i < endIndex; _i++)
         {
-            ScrollItemObject _itemObject = GetPooledItem();
+            ScrollItemObjectScript _itemObject = GetPooledItem();
 
             if (_itemObject == null)
             {
@@ -155,7 +155,7 @@ public class RecyclableScrollView : MonoBehaviour
         }
     }
 
-    ScrollItemObject GetPooledItem()
+    ScrollItemObjectScript GetPooledItem()
     {
         if (_inactiveItemObjects.Count > 0)
         {
@@ -165,8 +165,17 @@ public class RecyclableScrollView : MonoBehaviour
         GameObject newObj = Instantiate(_itemPrefab, _content);
         newObj.GetComponent<RectTransform>().sizeDelta = _cellSize;
         newObj.GetComponent<RectTransform>().pivot = new Vector2(0, 1);
-        return newObj.GetComponent<ScrollItemObject>();
+        return newObj.GetComponent<ScrollItemObjectScript>();
     }
+
+    /// <summary>
+    /// Builds the list of collected relics to display. Reads relic metadata
+    /// from RelicDatabaseClass (the cached, authoritative lookup over
+    /// RelicsDB.json) and filters by RelicSaveDataScript.IsCollected(id) —
+    /// the actual save-data authority for "is this collected" — instead of
+    /// trusting RelicsDB.json's own IsCollected field directly, which isn't
+    /// kept up to date.
+    /// </summary>
 
     void GetRelicsList()
     {
@@ -174,29 +183,33 @@ public class RecyclableScrollView : MonoBehaviour
 
         _allDataCount = 0;
 
-        if (File.Exists(filePath))
+        int _totalCount = 0;
+        int _collectedIndex = 0;
+
+        foreach(Relic _r in RelicDatabaseClass.All)
         {
-            string jsonString = File.ReadAllText(filePath);
+            _totalCount++;
 
-            RelicArray array = JsonUtility.FromJson<RelicArray>(jsonString);
-
-            int _i = 0;
-
-            foreach (Relic _r in array.data)
+            if(RelicSaveDataClass.IsCollected(_r.RelicID) == false)
             {
-                if (!_r.IsCollected)
-                {
-                    continue;
-                }
-
-                _allData.Add(new ItemData { title = $"{_r.RelicName}", index = _i });
-
-                _i++;
+                continue;
             }
 
-            _allDataCount = _allData.Count;
+            _allData.Add(new ItemData {
+                relicId = _r.RelicID,
+                title = _r.RelicName,
+                description = _r.RelicDescription,
+                index = _collectedIndex
+            });
 
-            _itemsCollectedCountText.text = _allDataCount.ToString() + " / " + array.data.Length.ToString();
+            _collectedIndex++;
+        }
+
+        _allDataCount = _allData.Count;
+
+        if(_itemsCollectedCountText != null)
+        {
+            _itemsCollectedCountText.text = _allDataCount + " / " + _totalCount;
         }
     }
 }

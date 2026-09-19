@@ -76,7 +76,7 @@ public class RelicFoundRewardCanvasScript : MonoBehaviour
         _franchiseLogoImage.color = logoColor;
 
         int total = RelicDatabaseClass.All.Count();
-        int collected = RelicDatabaseClass.All.Count(r => RelicSaveDataScript.IsCollected(r.RelicID));
+        int collected = RelicDatabaseClass.All.Count(r => RelicSaveDataClass.IsCollected(r.RelicID));
         _relicCountText.text = collected + " / " + total;
 
         // Makes the Continue button respond to the UI "Submit" action
