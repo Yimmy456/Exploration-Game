@@ -65,6 +65,14 @@ public class InventoryMenuControllerScript : MonoBehaviour
 
     private void OnInventoryPerformed(InputAction.CallbackContext ctx)
     {
+        if (ItemDescriptionCanvasScript.Instance != null)
+        {
+            if (ItemDescriptionCanvasScript.Instance.IsOpen)
+            {
+                return;
+            }
+        }
+
         if (_inventoryLoader.IsOpen)
             _inventoryLoader.Hide();
         else

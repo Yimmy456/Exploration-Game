@@ -39,6 +39,12 @@ MonoBehaviour:
     m_SerializedLabels:
     - UI
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d715f422dddde61459ae1c1404abe06d
+    m_Address: Assets/Prefabs/UIs/Item Details Canvas.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: fb0b7d683915fd64e916729f157547f5
     m_Address: Assets/Prefabs/UIs/Pause Menu Canvas.prefab
     m_ReadOnly: 0
